@@ -1,59 +1,34 @@
 <?php
 function main()
 {
-    //creo y cargo los arreglos
-    $tikets = [];
-    $juegoMasVendido = [];
-    $juegoMasVendido = cargarJuegosMasVendidos($juegoMasVendido);
-    $tikets = cargarTikets($tikets, $juegoMasVendido);
+    $juegoMasVendido = cargarJuegosMasVendidos();
+    $tikets = cargarTikets($juegoMasVendido);
     menu($tikets, $juegoMasVendido);
 }
 
 function menu($tikets, $juegoMasVendido)
 {
-    do {
-        echo "\n ------------------------------------------- \n";
-        echo " ELIJA UNA OPCION: \n";
-        echo "1) Ingresar una venta \n";
-        echo "2) Mes con mayor monto de ventas \n";
-        echo "3) Primer mes que supera un monto de ventas \n";
-        echo "4) Información de un mes \n";
-        echo "5) Juegos más vendidos Ordenados \n";
-        echo "6) Ver datos completos \n";
-        echo "0): SALIR" . "\n";
-        echo "----------------------------------------------\n";
-        echo "Opcion: ";
-        $opcion = trim(fgets(STDIN));
+    do { 
+        $opcion=menuOpciones();
         switch ($opcion) {
             case '1':
-                echo ("Ingrese un Mes." . "\n");
-                $mes = trim(fgets(STDIN));
-                $numeroMes = devuelveNumero($mes);
-                if ($numeroMes != -1) {
-                    echo ("Ingrese un Juego." . "\n");
-                    $juego = trim(fgets(STDIN));
-                    echo ("Ingrese Precio Tiket." . "\n");
-                    $precio = trim(fgets(STDIN));
-                    echo ("Ingrese Cantidad de Tickets Vendidos." . "\n");
-                    $cantidad = trim(fgets(STDIN));
-                    if(is_numeric($precio)&& is_numeric($cantidad)){
-                        $juegoMasVendido = ingresarVenta($numeroMes, $juegoMasVendido, $juego, $precio, $cantidad);
-                        $tikets = incrementarMonto($numeroMes, $tikets, $precio, $cantidad);
-                    }else{
-                        echo ("ERROR: debe ingresar numeros para precio y cantidad. \n");
-                    };
-                } else {
-                    echo ("ERROR: el valor ingresado no es un mes. \n");
-                }
+                $numeroMes =convierteMesANumero();
+                $juego= ingresarString('un Juego.'); 
+                $precio= ingresarNumero('Precio Tiket.');
+                $cantidad= ingresarNumero('Cantidad de Tikets.');
+                $juegoMasVendido = ingresarVenta($numeroMes, $juegoMasVendido, $juego, $precio, $cantidad);
+                $tikets = incrementarMonto($numeroMes, $tikets, $precio, $cantidad); 
                 break;
 
             case '2':
-                $text = mesConMayorVenta($tikets);
+                $mesConMayorVentas = mesConMayorVenta($tikets);
+                $text= informacionCompleta($tikets, $juegoMasVendido,$mesConMayorVentas);
                 echo ($text);
                 break;
             case '3':
-                $text = superaMonto($tikets);
-                echo ($text);
+                $mes = superaMonto($tikets);
+                if($mes!= -1){echo "El mes que supera ese monto es ". devuelveMes($mes);}
+                else{echo "No hay mes que supere ese monto";}
                 break;
             case '4':
                 $text = informacionMes($tikets, $juegoMasVendido);
@@ -63,10 +38,12 @@ function menu($tikets, $juegoMasVendido)
                 ordenar($juegoMasVendido);
                 break;
             case '6':
-                verDatos($tikets, $juegoMasVendido);
+                echo verDatos($tikets, $juegoMasVendido);
                 break;
         }
-    } while ($opcion <> 0);
+        
+    } while ($opcion != 0);    
+   
 }
 
 // 1
@@ -130,9 +107,8 @@ function mesConMayorVenta($tikets)
             $mes = $i;
         }
         $i++;
-    }
-    $text = "El mes con mayor ventas es " . devuelveMes($mes) . " (" . $sale . ")" . "\n";
-    return $text;
+    }    
+    return $mes;
 }
 
 // 3 
@@ -144,29 +120,20 @@ function mesConMayorVenta($tikets)
  */
 function superaMonto($tikets)
 {
-    echo ("Ingrese un monto." . "\n");
-    $text = "";
-    $monto = trim(fgets(STDIN));
-    $mes = 0;
-    if (is_numeric($monto)) {
+    $monto = ingresarNumero("un monto.");
+    $i = 0;
+    $mes = -1;
+    $encontro  = false;
 
-        foreach ($tikets as $tiket) {
-            if ($monto < $tiket) {
-                break;
-            } else {
-                $mes++;
-            }
+    while ($i < 12 && !$encontro) {
+        if ($monto < $tikets[$i]) {
+            $mes = $i;
+            $encontro  = true;
+        } else {
+            $i++;
         }
-    } else {
-        $text = "El valor ingresado no es un numero." . "\n";
     }
-
-    if ($mes < 11) {
-        $text = "El mes que supera el monto $" . $monto . " es el mes de " . devuelveMes($mes) . " con $" . $tiket;
-    } else {
-        $text = "Ningun mes supera ese valor";
-    }
-    return $text;
+    return $mes;
 }
 
 
@@ -179,21 +146,9 @@ function superaMonto($tikets)
  * @return string
  */
 function informacionMes($tikets, $juegoMasVendido)
-{
-    echo ("Ingrese un mes." . "\n");
-    $text = "";
-    $mes = trim(fgets(STDIN));
-    $numeroMes = devuelveNumero($mes);
-    if ($numeroMes != -1) {
-        $ventatotal = $juegoMasVendido[$numeroMes]['cantTickets'] * $juegoMasVendido[$numeroMes]['precioTicket'];
-        $text = '<' . $mes . '>' . "\n" .
-            '-El juego con mayor monto de venta: ' . $juegoMasVendido[$numeroMes]['juego'] . "\n" .
-            '-Numero de Tickets Vendidos: ' . $juegoMasVendido[$numeroMes]['cantTickets'] . "\n" .
-            '-Venta total de juego: $' . $ventatotal . "\n" .
-            '-Monto total de ventas del mes: $' . $tikets[$numeroMes] . "\n";
-    } else {
-        $text = "ERROR: el valor ingresado no es un mes. \n";
-    }
+{    
+    $numeroMes = convierteMesANumero();   
+    $text = informacionCompleta($tikets, $juegoMasVendido,$numeroMes);
     return $text;
 }
 
@@ -222,7 +177,7 @@ function ordenar($arreglo)
     uasort($arreglo, 'cmp');
     print_r($arreglo);
 
-    // imprime representación más entendible de un valor cualquiera.
+    // print_r imprime representación más entendible de un valor cualquiera.
     // Si es un arreglo imprime los detalles de cada elemento formateándolos para ser visualizados de una forma más entendible
     // Puede devolver su valor de salida como un valor de retorno si le pasa true como su segundo argumento
     // Útil para la depuración
@@ -238,12 +193,12 @@ function ordenar($arreglo)
  */
 function verDatos($tikets, $juegoMasVendido)
 {
-
-    for ($x = 0; $x < 12; $x++) {
-        echo ("\n <" . devuelveMes($x) . "> ($" . $tikets[$x] . ") Juego Mas vendido: " . $juegoMasVendido[$x]['juego'] .
-            ", precio tiket: " . $juegoMasVendido[$x]['precioTicket'] .
-            ", cantidad tikets: " . $juegoMasVendido[$x]['cantTickets'] . ". \n");
+    $datos="";
+    for ($numeroMes = 0; $numeroMes < 12; $numeroMes++) {
+       $datos=$datos. informacionCompleta($tikets, $juegoMasVendido,$numeroMes)."\n";
     }
+
+    return $datos;
 }
 
 
@@ -260,36 +215,35 @@ function devuelveMes($x)
     return $meses[$x];
 }
 
+
+
 /**
- * devuelveNumero
+ * convierteMesANumero  dado un string que representa el mes devuelve el número que le corresponde (en caso de no encontrar mes vuelve a pedirlo)
  *
- * @param  string $x
- * @return integer
+ * @return int
  */
-function devuelveNumero($x)
+function convierteMesANumero()
 {
-    $x = strtolower($x);
-    $i = 0;
-    $sale = -1;
+    $encontro = false;
     $meses = array("enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre");
-    foreach ($meses as $mes) {
-        if ($mes == $x) {
-            $sale = $i;
-            break;
+    do {
+        $i = 0;
+        $mesbuscado =ingresarString('el nombre de un mes.'); 
+        while ($i < count($meses) && !$encontro) {
+            if ($meses[$i] == $mesbuscado) {
+                $encontro = true;
+            } else {
+                $i++;
+            }
         }
-        $i++;
-    }
-    return $sale;
+        if (!$encontro) {
+            echo "Error mes no valido\n";
+        }
+    } while (!$encontro);
+
+    return  $i;
 }
 
-
-function solicitarMes()
-{
-    echo ("Ingrese el nombre de un mes." . "\n");
-    $mes = trim(fgets(STDIN));
-    $sale = devuelveNumero($mes);
-    return $sale;
-}
 
 
 /**
@@ -299,9 +253,10 @@ function solicitarMes()
  * @param  array $juegoMasVendido
  * @return array
  */
-function cargarTikets($tikets, $juegoMasVendido)
+function cargarTikets($juegoMasVendido)
 {
     $i = 0;
+    $tikets = [];
     foreach ($juegoMasVendido as $juego) {
         $tikets[$i] = $juego['precioTicket'] * $juego['cantTickets'];
         $i++;
@@ -315,7 +270,7 @@ function cargarTikets($tikets, $juegoMasVendido)
  * @param  arrat $arreglo
  * @return array
  */
-function cargarJuegosMasVendidos($arreglo)
+function cargarJuegosMasVendidos()
 {
     $arreglo = array(
         ["juego" => 'Autitos Chocadores', "precioTicket" => 2, "cantTickets" => 1],
@@ -334,7 +289,79 @@ function cargarJuegosMasVendidos($arreglo)
     return $arreglo;
 }
 
+/**
+ * menuOpciones muestra las opciones en la pantalla, solicita al usuario una opción válida 
+ * (si la opción no es válida vuelva a solicitarla)
+ *
+ * @return int
+ */
+function menuOpciones(){
+    do {
+        echo "\n ------------------------------------------- \n";
+        echo " ELIJA UNA OPCION: \n";
+        echo "1) Ingresar una venta \n";
+        echo "2) Mes con mayor monto de ventas \n";
+        echo "3) Primer mes que supera un monto de ventas \n";
+        echo "4) Información de un mes \n";
+        echo "5) Juegos más vendidos Ordenados \n";
+        echo "6) Ver datos completos \n";
+        echo "0): SALIR" . "\n";
+        echo "----------------------------------------------\n";
+        echo "Opcion: ";
+        $opcion = trim(fgets(STDIN));
+    } while ($opcion < 0 || $opcion > 6);
+
+    return $opcion;
+}
+
+/**
+ * ingresarString pide un string y entra parte del mensaje que muestra en pantalla
+ * por paramentro 
+ *
+ * @param  string  $texto
+ * @return int
+ */
+function ingresarString( $texto){
+    echo ("Ingrese ".$texto . "\n");
+    $valor = trim(fgets(STDIN));
+    return $valor;
+}
+
+/**
+ * ingresarNumero pide un numero y entra parte del mensaje que muestra en pantalla
+ * por paramentro (si el valor ingresado no es numero vuelve a pedirlo)
+ * @param  mixed $texto
+ * @return int
+ */
+function ingresarNumero($texto){
+    do {
+        echo ("Ingrese ".$texto . "\n");
+        $valor = trim(fgets(STDIN));
+        if(!is_numeric($valor)){
+            echo ("ERROR: debe ingresar un numero. \n");
+        }  
+    } while (!is_numeric($valor));   
+    
+    return $valor;
+}
 
 
+/**
+ * informacionCompleta muestra la informacion completa de un mes
+ *
+ * @param  array $tikets
+ * @param  array $juegoMasVendido
+ * @param  int $numeroMes
+ * @return string
+ */
+function  informacionCompleta($tikets, $juegoMasVendido,$numeroMes){
+    $ventatotal = $juegoMasVendido[$numeroMes]['cantTickets'] * $juegoMasVendido[$numeroMes]['precioTicket'];
+    $text = '<' . devuelveMes($numeroMes). '>' . "\n" .
+    '-El juego con mayor monto de venta: ' . $juegoMasVendido[$numeroMes]['juego'] . "\n" .
+    '-Numero de Tickets Vendidos: ' . $juegoMasVendido[$numeroMes]['cantTickets'] . "\n" .
+    '-Venta total de juego: $' . $ventatotal . "\n" .
+    '-Monto total de ventas del mes: $' . $tikets[$numeroMes] . "\n";
 
+    return $text;
+}
 main();
